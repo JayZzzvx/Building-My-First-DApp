@@ -1,0 +1,3 @@
+npx create-react-app vesting-dapp
+cd vesting-dapp
+npm install ethers
