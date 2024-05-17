@@ -1,0 +1,68 @@
+import React, { useState } from 'react';
+import { ethers } from 'ethers';
+import OrganizationRegistryABI from './OrganizationRegistryABI.json';
+
+const AdminPage = () => {
+    const [orgAddress, setOrgAddress] = useState('');
+    const [tokenAddress, setTokenAddress] = useState('');
+    const [stakeholderType, setStakeholderType] = useState('');
+    const [stakeholderAddress, setStakeholderAddress] = useState('');
+    const [amount, setAmount] = useState('');
+    const [releaseTime, setReleaseTime] = useState('');
+
+    const registerOrganization = async () => {
+        if (!window.ethereum) {
+            alert('MetaMask not detected!');
+            return;
+        }
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const contract = new ethers.Contract(orgAddress, OrganizationRegistryABI, signer);
+
+        try {
+            await contract.registerOrganization(tokenAddress);
+            alert('Organization registered successfully');
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const addStakeholder = async () => {
+        if (!window.ethereum) {
+            alert('MetaMask not detected!');
+            return;
+        }
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const contract = new ethers.Contract(orgAddress, OrganizationRegistryABI, signer);
+
+        try {
+            await contract.addStakeholder(stakeholderType, stakeholderAddress, ethers.utils.parseUnits(amount, 18), Math.floor(new Date(releaseTime).getTime() / 1000));
+            alert('Stakeholder added successfully');
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    return (
+        <div>
+            <h2>Admin Page</h2>
+            <div>
+                <h3>Register Organization</h3>
+                <input type="text" placeholder="Org Address" value={orgAddress} onChange={(e) => setOrgAddress(e.target.value)} />
+                <input type="text" placeholder="Token Address" value={tokenAddress} onChange={(e) => setTokenAddress(e.target.value)} />
+                <button onClick={registerOrganization}>Register</button>
+            </div>
+            <div>
+                <h3>Add Stakeholder</h3>
+                <input type="text" placeholder="Stakeholder Type" value={stakeholderType} onChange={(e) => setStakeholderType(e.target.value)} />
+                <input type="text" placeholder="Stakeholder Address" value={stakeholderAddress} onChange={(e) => setStakeholderAddress(e.target.value)} />
+                <input type="text" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                <input type="text" placeholder="Release Time" value={releaseTime} onChange={(e) => setReleaseTime(e.target.value)} />
+                <button onClick={addStakeholder}>Add Stakeholder</button>
+            </div>
+        </div>
+    );
+};
+
+export default AdminPage;
