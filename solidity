@@ -1,0 +1,68 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract OrganizationRegistry is Ownable {
+    struct Stakeholder {
+        address addr;
+        uint256 amount;
+        uint256 releaseTime;
+        bool claimed;
+    }
+
+    struct Organization {
+        address tokenAddress;
+        mapping(string => Stakeholder[]) stakeholders;
+        bool registered;
+    }
+
+    mapping(address => Organization) public organizations;
+
+    event OrganizationRegistered(address indexed orgAddress, address tokenAddress);
+    event StakeholderAdded(address indexed orgAddress, string stakeholderType, address stakeholder, uint256 amount, uint256 releaseTime);
+    event TokensClaimed(address indexed orgAddress, string stakeholderType, address stakeholder, uint256 amount);
+
+    modifier onlyRegisteredOrg() {
+        require(organizations[msg.sender].registered, "Organization not registered");
+        _;
+    }
+
+    function registerOrganization(address tokenAddress) external {
+        require(!organizations[msg.sender].registered, "Organization already registered");
+        organizations[msg.sender].tokenAddress = tokenAddress;
+        organizations[msg.sender].registered = true;
+        emit OrganizationRegistered(msg.sender, tokenAddress);
+    }
+
+    function addStakeholder(
+        string calldata stakeholderType,
+        address stakeholder,
+        uint256 amount,
+        uint256 releaseTime
+    ) external onlyRegisteredOrg {
+        require(releaseTime > block.timestamp, "Release time must be in the future");
+        organizations[msg.sender].stakeholders[stakeholderType].push(Stakeholder({
+            addr: stakeholder,
+            amount: amount,
+            releaseTime: releaseTime,
+            claimed: false
+        }));
+        emit StakeholderAdded(msg.sender, stakeholderType, stakeholder, amount, releaseTime);
+    }
+
+    function claimTokens(string calldata stakeholderType) external {
+        Organization storage org = organizations[msg.sender];
+        require(org.registered, "Organization not registered");
+
+        Stakeholder[] storage stakeholders = org.stakeholders[stakeholderType];
+        for (uint256 i = 0; i < stakeholders.length; i++) {
+            if (stakeholders[i].addr == msg.sender && !stakeholders[i].claimed && block.timestamp >= stakeholders[i].releaseTime) {
+                stakeholders[i].claimed = true;
+                IERC20(org.tokenAddress).transfer(stakeholders[i].addr, stakeholders[i].amount);
+                emit TokensClaimed(msg.sender, stakeholderType, stakeholders[i].addr, stakeholders[i].amount);
+            }
+        }
+    }
+}
