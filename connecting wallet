@@ -1,0 +1,28 @@
+import React, { useState } from 'react';
+import { ethers } from 'ethers';
+
+const ConnectWallet = () => {
+    const [walletAddress, setWalletAddress] = useState('');
+
+    const connectWallet = async () => {
+        if (window.ethereum) {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                setWalletAddress(accounts[0]);
+            } catch (error) {
+                console.error("User denied account access");
+            }
+        } else {
+            alert('MetaMask not detected!');
+        }
+    };
+
+    return (
+        <div>
+            <button onClick={connectWallet}>Connect Wallet</button>
+            {walletAddress && <p>Connected: {walletAddress}</p>}
+        </div>
+    );
+};
+
+export default ConnectWallet;
